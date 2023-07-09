@@ -85,5 +85,5 @@ function App(props) {
 
 export default withUrqlClient((_ssrExchange, ctx) => ({
   // ...add your Client options here
-  url: "http://localhost:4000/graphql",
+  url: "https://estore-backend-indol.vercel.app/graphql",
 }))(App);
