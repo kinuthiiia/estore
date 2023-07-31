@@ -133,6 +133,15 @@ export default function Product() {
           variant,
         })
           .then((data, error) => {
+            console.log(
+              {
+                customer: session.user.email,
+                product: router?.query?.id,
+                variant,
+              },
+              data,
+              error
+            );
             if (data?.data?.addToCart && !error) {
               notifications.show({
                 title: "Product added to cart",

@@ -11,6 +11,7 @@ import Additional from "./additional";
 import ProductCardAdmin from "./productcardadmin";
 import AdminCard from "./admincard";
 import BarChart from "./barchart";
+import OrderAdmin from "./orderadmin";
 
 export {
   Footer,
@@ -26,4 +27,5 @@ export {
   ProductCardAdmin,
   AdminCard,
   BarChart,
+  OrderAdmin,
 };

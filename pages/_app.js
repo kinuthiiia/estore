@@ -16,7 +16,7 @@ import "tailwindcss/tailwind.css";
 import "react-responsive-carousel/lib/styles/carousel.min.css";
 import UserData from "../context/userdata";
 
-const searchClient = algoliasearch(
+export const searchClient = algoliasearch(
   "YTL735AQT8",
   "1c20f00d762ed7fa5d4d751839fa5990"
 );
@@ -85,5 +85,5 @@ function App(props) {
 
 export default withUrqlClient((_ssrExchange, ctx) => ({
   // ...add your Client options here
-  url: "https://estore-backend-indol.vercel.app/graphql",
+  url: process.env.NEXT_PUBLIC_SERVER_REMOTE,
 }))(App);

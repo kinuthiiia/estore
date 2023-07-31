@@ -50,12 +50,18 @@ export default function CartItem({ order, noControls }) {
   };
 
   return (
-    <div className="flex space-x-2 border-b-[0.5px] pb-4">
+    <div
+      className={
+        noControls
+          ? "flex space-x-2 pb-4"
+          : "flex space-x-2 border-b-[0.5px] pb-4"
+      }
+    >
       <div className="w-[45%]">
         <img
           onClick={() => router.push(`/product/${order?.product?.id}`)}
           src={order?.product?.images[0]}
-          className="w-full h-[150px] min-w-[60px] object-contain"
+          className="w-full h-[70px] min-w-[60px] object-contain"
           alt={order?.product?.name}
         />
       </div>
@@ -71,22 +77,28 @@ export default function CartItem({ order, noControls }) {
           )}
           <p className="text-[#A18A68] text-[0.9rem]">
             Ksh.{" "}
-            {
-              order?.product.variants.filter(
-                (variant) => variant?.label == order?.variant
-              )[0].price
-            }
+            {!noControls
+              ? order?.product.variants.filter(
+                  (variant) => variant?.label == order?.variant
+                )[0].price
+              : order?.salePrice}
           </p>
         </div>
         <div>
-          <Badge color="dark" radius="xs" variant="filled">
+          <Badge
+            color="dark"
+            radius="xs"
+            variant="filled"
+            style={{ marginTop: 4 }}
+          >
             {
-              order?.product.variants.filter(
+              order?.product?.variants?.filter(
                 (variant) => variant?.label == order?.variant
               )[0]?.label
             }
           </Badge>
         </div>
+        {noControls && <p>Qty: {order?.quantity}</p>}
         {!noControls && (
           <Select
             dropdownComponent="div"

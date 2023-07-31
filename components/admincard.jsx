@@ -5,15 +5,94 @@ import {
   Button,
   HoverCard,
   Kbd,
+  PasswordInput,
   Popover,
   Space,
   Text,
 } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import moment from "moment";
 import { useState } from "react";
+import { useMutation } from "urql";
 
-export default function AdminCard({ admin }) {
-  const [popoverOpen, setPopoverOpen] = useState(false);
+export default function AdminCard({ admin, me, refresh }) {
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const UPDATE_ADMIN = `
+    mutation UPDATE_ADMIN(
+      $id: ID
+      $name: String
+      $phoneNumber: String
+      $email: String
+      $password: String
+      $removed: Boolean
+    ){
+      updateAdmin(
+        id: $id
+        name: $name
+        phoneNumber: $phoneNumber
+        email: $email
+        password: $password
+        removed: $removed
+      ){
+        id
+      }
+    }  
+  `;
+
+  const [_, _updateAdmin] = useMutation(UPDATE_ADMIN);
+
+  const handleRemoveUser = () => {
+    if (password !== me?.password) {
+      notifications.show({
+        title: "Incorrect password",
+        color: "orange",
+      });
+      return;
+    }
+
+    if (admin?.id == me?.id) {
+      notifications.show({
+        title: "Not permissible",
+        message: "You cannot remove yourself from the system",
+        color: "orange",
+      });
+      return;
+    }
+
+    setLoading(true);
+    _updateAdmin({
+      id: admin?.id,
+      removed: true,
+    })
+      .then((data, error) => {
+        if (data?.data?.updateAdmin && !error) {
+          notifications.show({
+            title: "Admin removed successfully",
+            color: "green",
+          });
+          refresh();
+          return;
+        }
+        notifications.show({
+          title: "Oops!",
+          message: "Something occured in the system!",
+          color: "red",
+        });
+        return;
+      })
+      .catch((err) => {
+        notifications.show({
+          title: "Oops!",
+          message: err?.message,
+          color: "red",
+        });
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  };
 
   return (
     <div>
@@ -70,52 +149,43 @@ export default function AdminCard({ admin }) {
             </p>
 
             <Space h={20} />
-            <div className="w-full flex space-x-12 justify-around">
-              <Button fullWidth uppercase fw="lighter" color="dark">
-                Edit
-              </Button>
-              <Popover
-                width={200}
-                position="right-end"
-                withArrow
-                shadow="md"
-                opened={popoverOpen}
-                onChange={setPopoverOpen}
-              >
-                <Popover.Target>
-                  <Button
-                    onClick={() => setPopoverOpen((o) => !o)}
-                    fullWidth
-                    variant="outline"
-                    uppercase
-                    fw="lighter"
-                    color="dark"
-                  >
-                    Delete
-                  </Button>
-                </Popover.Target>
-                <Popover.Dropdown>
-                  <Text size="sm">
-                    Are you sure you want to remove this admin?
-                  </Text>
-                  <div className="flex mt-3 justify-between space-x-8">
-                    <Button fullWidth uppercase fw="lighter" color="dark">
-                      Yes
-                    </Button>
+            {me?.levelClearance == "super-admin" && (
+              <div className="w-full flex space-x-12 justify-around">
+                <Popover width="target" position="top" withArrow shadow="md">
+                  <Popover.Target>
                     <Button
                       fullWidth
+                      variant="outline"
                       uppercase
                       fw="lighter"
-                      onClick={() => setPopoverOpen(false)}
                       color="dark"
-                      variant="outline"
                     >
-                      No
+                      Remove
                     </Button>
-                  </div>
-                </Popover.Dropdown>
-              </Popover>
-            </div>
+                  </Popover.Target>
+                  <Popover.Dropdown>
+                    <div className="p-4 space-y-3">
+                      <Text size="sm">
+                        To delete user , type your password below,
+                      </Text>
+                      <PasswordInput
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                      />
+                      <Button
+                        color="dark"
+                        fullWidth
+                        uppercase
+                        loading={loading}
+                        onClick={handleRemoveUser}
+                      >
+                        Remove user
+                      </Button>
+                    </div>
+                  </Popover.Dropdown>
+                </Popover>
+              </div>
+            )}
           </div>
         </Accordion.Panel>
       </Accordion.Item>

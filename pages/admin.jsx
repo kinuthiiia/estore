@@ -1,14 +1,18 @@
 import {
   Accordion,
+  ActionIcon,
+  Avatar,
+  Badge,
   Button,
-  Checkbox,
+  Card,
   Divider,
-  HoverCard,
+  Group,
   Input,
+  Kbd,
   Modal,
-  MultiSelect,
   Notification,
   NumberInput,
+  PasswordInput,
   Popover,
   Radio,
   Select,
@@ -18,78 +22,401 @@ import {
   TextInput,
   Textarea,
 } from "@mantine/core";
+import { DatePickerInput } from "@mantine/dates";
 import {
+  Icon123,
+  IconBoxSeam,
   IconCheck,
+  IconCheckupList,
   IconExclamationMark,
+  IconHomeCog,
   IconLock,
+  IconLogout,
   IconMail,
   IconPlus,
   IconSearch,
+  IconTruckDelivery,
+  IconWallet,
   IconX,
 } from "@tabler/icons";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Additional,
   AdminCard,
-  BarChart,
-  ProductCard,
+  OrderAdmin,
   ProductCardAdmin,
   Variant,
 } from "../components";
 import dynamic from "next/dynamic";
-import { useMutation, useQuery } from "urql";
+import { useClient, useMutation, useQuery } from "urql";
 import { notifications } from "@mantine/notifications";
-import { Hits } from "react-instantsearch-hooks-web";
+import {
+  Configure,
+  Highlight,
+  Hits,
+  Index,
+  InfiniteHits,
+  InstantSearch,
+  SearchBox,
+  useInfiniteHits,
+  useSearchBox,
+} from "react-instantsearch-hooks-web";
+import logo from "../public/logoadmin.svg";
+import Image from "next/image";
+import { searchClient } from "../pages/_app.js";
+import moment from "moment";
 
 const DynamicBar = dynamic(() => import("../components/barchart"), {
   loading: () => <p>Loading...</p>,
 });
 
+const GET_ADMIN = `
+    query GET_ADMIN(
+       $id: ID
+       $email: String 
+       $password: String
+       ){
+      getAdmin(
+         id: $id 
+         email: $email 
+         password: $password
+      ){
+        id
+        email        
+        password
+        name
+        phoneNumber
+        levelClearance        
+      }
+    }
+  
+  `;
+
 export default function Admin() {
+  const [admin, setAdmin] = useState({});
+  const [loading, setLoading] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  const graphqlClient = useClient();
+
+  useEffect(() => {
+    if (Object.keys(admin).length > 0) {
+      setIsLoggedIn(true);
+    } else {
+      setIsLoggedIn(false);
+    }
+  }, [admin]);
+
+  useEffect(() => {
+    setLoading(true);
+    if (typeof window !== "undefined") {
+      let id = localStorage?.getItem("admin_key");
+      if (id) {
+        graphqlClient
+          .query(GET_ADMIN, {
+            id,
+          })
+          .toPromise()
+          .then(({ data, error }) => {
+            if (data && !error) {
+              setLoading(false);
+              setAdmin(data?.getAdmin);
+            } else {
+              console.log(data, error, id);
+              localStorage.clear();
+            }
+          });
+      } else {
+        console.log("Not logged in");
+        setIsLoggedIn(false);
+      }
+    }
+  }, []);
+
+  const handleLogOut = () => {
+    localStorage.clear();
+    setAdmin({});
+  };
+
+  if (!isLoggedIn) return <Login setAdminParent={(admin) => setAdmin(admin)} />;
+
   return (
     <div className="space-y-8">
-      <AdminHeader />
+      <AdminHeader admin={admin} logOut={handleLogOut} />
       <div className="px-6">
-        <Page />
+        <Page admin={admin} />
       </div>
     </div>
   );
 }
 
-const AdminHeader = () => {
-  return <div className="w-full flex p-4 justify-between">hey</div>;
+const Login = ({ setAdminParent }) => {
+  const graphqlClient = useClient();
+  const [admin, setAdmin] = useState({
+    email: "",
+    password: "",
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = () => {
+    console.log(admin);
+    if (
+      !/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/.test(
+        admin?.email
+      )
+    ) {
+      notifications.show({
+        title: "Invalid email",
+        color: "orange",
+      });
+      return;
+    }
+
+    if (!admin?.email) {
+      notifications.show({
+        title: "Missing email field",
+        color: "orange",
+      });
+      return;
+    }
+
+    if (!admin?.password) {
+      notifications.show({
+        title: "Missing password field",
+        color: "orange",
+      });
+      return;
+    }
+
+    setLoading(true);
+    graphqlClient
+      .query(GET_ADMIN, {
+        email: admin?.email,
+        password: admin?.password,
+      })
+      .toPromise()
+      .then(({ data, error }) => {
+        console.log(data, error);
+        if (data?.getAdmin && !error) {
+          localStorage.setItem("admin_key", data?.getAdmin?.id);
+          setAdminParent(data?.getAdmin);
+          setLoading(false);
+        } else {
+          notifications.show({
+            title: "Invalid credentials",
+            color: "red",
+          });
+          setLoading(false);
+        }
+      });
+  };
+
+  return (
+    <div className="relative w-full h-screen bg-[#A18A68]">
+      <div className="absolute p-8 rounded-sm bg-white top-[40%] w-3/4 left-[50%] translate-x-[-50%] translate-y-[-50%] space-y-4 ">
+        <h1 className="font-bold text-[1.4rem] w-full text-center">Login</h1>
+        <Divider />
+        <TextInput
+          withAsterisk
+          label="Email"
+          value={admin.email}
+          error={
+            /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/.test(
+              admin?.email
+            ) || !admin?.email
+              ? null
+              : "Invalid email"
+          }
+          onChange={(e) =>
+            setAdmin((admin) => {
+              return {
+                ...admin,
+                email: e.target.value,
+              };
+            })
+          }
+        />
+        <PasswordInput
+          withAsterisk
+          label="Password"
+          value={admin.password}
+          onChange={(e) =>
+            setAdmin((admin) => {
+              return {
+                ...admin,
+                password: e.target.value,
+              };
+            })
+          }
+        />
+        <Button
+          onClick={handleLogin}
+          uppercase
+          loading={loading}
+          fullWidth
+          style={{ background: "#A18A68" }}
+        >
+          Login
+        </Button>
+      </div>
+    </div>
+  );
 };
 
-const Page = () => {
+const AdminHeader = ({ admin, logOut }) => {
+  const [profileOpen, setProfileOpen] = useState(false);
+
   return (
-    <Tabs color="dark" defaultValue="dashboard">
+    <div className="w-full flex p-4 justify-between">
+      <Image height={40} priority src={logo} alt="logo" />
+      <Avatar color="brown" size={48} onClick={() => setProfileOpen(true)}>
+        {admin?.name
+          ?.split(" ")
+          ?.map((el) => new String(el).charAt(0).toUpperCase())}{" "}
+      </Avatar>
+      <Modal
+        opened={profileOpen}
+        onClose={() => setProfileOpen(false)}
+        centered
+        withCloseButton={false}
+      >
+        <div className="flex justify-between">
+          <h1 className="py-6 px-3 font-bold text-[1.5rem]">Profile</h1>
+          <Button
+            onClick={() => setProfileOpen((o) => !o)}
+            color="gray"
+            variant="subtle"
+            mt={24}
+          >
+            <IconX />
+          </Button>
+        </div>
+        <div className="space-y-6 px-2 mt-6">
+          <div className="space-y-3">
+            <p className="font-medium mt-3">Full Name</p>
+            <div className="flex justify-between">
+              <p className="font-light">{admin?.name}</p>
+              <Badge color="dark" uppercase radius={null}>
+                {admin?.levelClearance}
+              </Badge>
+            </div>
+          </div>
+          <div className="space-y-3">
+            <p className="font-medium mt-3">Email</p>
+            <p className="font-light">{admin?.email}</p>
+          </div>
+          <div className="space-y-3">
+            <p className="font-medium mt-3">Phone number</p>
+            <p className="font-light">
+              {admin?.phoneNumber ? (
+                admin?.phoneNumber
+              ) : (
+                <Badge color="orange" uppercase radius={null}>
+                  missing
+                </Badge>
+              )}
+            </p>
+          </div>
+          <Divider />
+          <Button
+            onClick={() => logOut()}
+            fullWidth
+            uppercase
+            color="dark"
+            variant="outline"
+          >
+            <IconLogout size={12} style={{ marginRight: 12 }} /> log out
+          </Button>
+        </div>
+      </Modal>
+    </div>
+  );
+};
+
+const Page = ({ admin }) => {
+  return (
+    <Tabs
+      color="dark"
+      unstyled
+      styles={(theme) => ({
+        tabsList: {
+          display: "flex",
+          maxWidth: "100%",
+          overflowX: "auto",
+          scrollbarWidth: "none",
+        },
+        tabPanel: {
+          background: "yellow",
+        },
+        tab: {
+          ...theme.fn.focusStyles(),
+          padding: `${theme.spacing.xs} ${theme.spacing.md}`,
+          cursor: "pointer",
+          fontSize: theme.fontSizes.sm,
+          display: "flex",
+          alignItems: "center",
+          fontFamily: "Satoshi",
+          borderBottomColor: "light-gray",
+          borderBottomWidth: 0.5,
+          "&[data-active]": {
+            borderBottomColor: "black",
+            borderBottomWidth: 2,
+          },
+        },
+      })}
+      defaultValue="dashboard"
+    >
       <Tabs.List>
         <Tabs.Tab value="dashboard">Dashboard</Tabs.Tab>
         <Tabs.Tab value="products">Products</Tabs.Tab>
         <Tabs.Tab value="orders">Orders</Tabs.Tab>
+        <Tabs.Tab value="transactions">Transactions</Tabs.Tab>
         <Tabs.Tab value="admins">Admins</Tabs.Tab>
+        <Tabs.Tab value="sections">Sections</Tabs.Tab>
       </Tabs.List>
 
       <Tabs.Panel value="dashboard" pl="xs">
-        <Dashboard />
+        <div className="max-h-[calc(100vh-170px)] mt-[15px] overflow-y-auto">
+          <Dashboard />
+        </div>
       </Tabs.Panel>
 
       <Tabs.Panel value="products" pl="xs">
-        <Products />
+        <div className="max-h-[calc(100vh-170px)] mt-[15px] overflow-y-auto">
+          <Products admin={admin} />
+        </div>
       </Tabs.Panel>
 
       <Tabs.Panel value="orders" pl="xs">
-        Orders
+        <div className="max-h-[calc(100vh-170px)] mt-[15px] overflow-y-auto">
+          <Orders />
+        </div>
       </Tabs.Panel>
 
       <Tabs.Panel value="admins" pl="xs">
-        <Admins />
+        <div className="max-h-[calc(100vh-170px)] mt-[15px] overflow-y-auto">
+          <Admins _admin={admin} />
+        </div>
+      </Tabs.Panel>
+
+      <Tabs.Panel value="transactions" pl="xs">
+        <div className="max-h-[calc(100vh-170px)] mt-[15px] overflow-y-auto">
+          <InstantSearch searchClient={searchClient} indexName="transactions">
+            <Transactions />
+          </InstantSearch>
+        </div>
+      </Tabs.Panel>
+
+      <Tabs.Panel value="sections" pl="xs">
+        <div className="max-h-[calc(100vh-170px)] mt-[15px] overflow-y-auto">
+          <Sections />
+        </div>
       </Tabs.Panel>
     </Tabs>
   );
 };
 
-const Products = () => {
+const Products = ({ admin }) => {
   const ADD_PRODUCT = `
     mutation ADD_PRODUCT(
         $name: String
@@ -146,6 +473,8 @@ const Products = () => {
   const [loadingVariant, setLoadingVariant] = useState(false);
   const [loadingAdditional, setLoadingAdditional] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
+
+  const [permissionModal, setPermissionModal] = useState(false);
 
   const getBase64 = (file) => {
     return new Promise((resolve, reject) => {
@@ -342,11 +671,32 @@ const Products = () => {
         w={56}
         p={0}
         color="dark"
-        onClick={() => setAddModal(true)}
+        onClick={() => {
+          if (admin?.levelClearance !== "super-admin") {
+            setPermissionModal(true);
+            return;
+          }
+          setAddModal(true);
+        }}
         style={{ position: "fixed", bottom: 24, right: 24 }}
       >
         <IconPlus />
       </Button>
+
+      <Modal
+        opened={permissionModal}
+        onClose={() => setPermissionModal(false)}
+        centered
+      >
+        <div className="w-full">
+          <img src="/access_denied.jpg" />
+
+          <h1 className="w-full text-center">Access denied</h1>
+          <p className="mt-8 mb-8 w-full px-12 text-center">
+            You need <Kbd>super-admin</Kbd> identification to add new products
+          </p>
+        </div>
+      </Modal>
 
       <Modal
         opened={addModal}
@@ -746,7 +1096,7 @@ const Products = () => {
   );
 };
 
-const Admins = () => {
+const Admins = ({ _admin }) => {
   const GET_ADMINS = `
       query GET_ADMINS{
         getAdmins{
@@ -790,6 +1140,10 @@ const Admins = () => {
   });
 
   const [loading, setLoading] = useState(false);
+
+  const [permissionModal, setPermissionModal] = useState(false);
+
+  const [keyword, setKeyword] = useState("");
 
   const handleCloseModal = () => {
     setAdmin({
@@ -850,31 +1204,107 @@ const Admins = () => {
   };
 
   return (
-    <div className="space-y-8 py-6 relative max-h-[calc(100vh-96px)] h-[calc(100vh-96px)] overflow-y-auto">
-      <Input
-        icon={<IconSearch size={16} />}
-        variant="filled"
-        placeholder="Search"
-      />
+    <div className="space-y-6 py-6 relative overflow-y-auto">
+      <div className="space-y-3">
+        <Input
+          icon={<IconSearch size={16} />}
+          variant="filled"
+          placeholder="Search"
+          value={keyword}
+          onChange={(e) => setKeyword(e.target.value)}
+        />
+        <p className="text-[0.8rem] ">
+          {data?.getAdmins
+            ? data?.getAdmins.filter((admin) => {
+                if (keyword == "is:super-admin") {
+                  return admin.levelClearance == "super-admin";
+                } else if (keyword == "is:order-dispatcher") {
+                  return admin.levelClearance == "order-dispatcher";
+                } else if (keyword == "is:general") {
+                  return admin.levelClearance == "general";
+                } else {
+                  return (
+                    admin.name
+                      ?.toLowerCase()
+                      .includes(keyword?.toLowerCase()) ||
+                    admin.email
+                      ?.toLowerCase()
+                      .includes(keyword?.toLowerCase()) ||
+                    admin.phoneNumber
+                      ?.toLowerCase()
+                      .includes(keyword?.toLowerCase())
+                  );
+                }
+              }).length
+            : `...`}{" "}
+          result (s)
+        </p>
+      </div>
 
-      <Accordion>
+      <div className="max-h-[calc(100vh-310px)] overflow-y-auto ">
         {fetching && <p>Loading...</p>}
         {error && <p>Error...</p>}
-        {data?.getAdmins.map((admin, i) => (
-          <AdminCard key={i} admin={admin} />
-        ))}
-      </Accordion>
+        <Accordion>
+          {data?.getAdmins
+            .filter((admin) => {
+              if (keyword == "is:super-admin") {
+                return admin.levelClearance == "super-admin";
+              } else if (keyword == "is:order-dispatcher") {
+                return admin.levelClearance == "order-dispatcher";
+              } else if (keyword == "is:general") {
+                return admin.levelClearance == "general";
+              } else {
+                return (
+                  admin.name?.toLowerCase().includes(keyword?.toLowerCase()) ||
+                  admin.email?.toLowerCase().includes(keyword?.toLowerCase()) ||
+                  admin.phoneNumber
+                    ?.toLowerCase()
+                    .includes(keyword?.toLowerCase())
+                );
+              }
+            })
+            .map((admin, i) => (
+              <AdminCard
+                key={i}
+                admin={admin}
+                me={_admin}
+                refresh={reexecuteQuery}
+              />
+            ))}
+        </Accordion>
+      </div>
 
       <Button
         h={56}
         w={56}
         p={0}
         color="dark"
-        onClick={() => setAddModal(true)}
+        onClick={() => {
+          if (_admin?.levelClearance !== "super-admin") {
+            setPermissionModal(true);
+            return;
+          }
+          setAddModal(true);
+        }}
         style={{ position: "fixed", bottom: 24, right: 24 }}
       >
         <IconPlus />
       </Button>
+
+      <Modal
+        opened={permissionModal}
+        onClose={() => setPermissionModal(false)}
+        centered
+      >
+        <div className="w-full">
+          <img src="/access_denied.jpg" />
+
+          <h1 className="w-full text-center">Access denied</h1>
+          <p className="mt-8 mb-8 w-full px-12 text-center">
+            You need <Kbd>super-admin</Kbd> identification to add new admins
+          </p>
+        </div>
+      </Modal>
 
       <Modal
         opened={addModal}
@@ -950,6 +1380,13 @@ const Admins = () => {
           <TextInput
             placeholder="Admin email"
             label="Admin email"
+            error={
+              /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/.test(
+                admin?.email
+              ) || !admin?.email
+                ? null
+                : "Invalid email"
+            }
             withAsterisk
             rightSection={<IconMail color="gray" size={16} />}
             value={admin?.email}
@@ -1070,89 +1507,424 @@ const Admins = () => {
 };
 
 const Dashboard = () => {
-  return (
-    <div className="py-6 space-y-8">
-      <div className="space-y-4">
-        <Notification color="gray" title="Total orders" withCloseButton={false}>
-          <div>
-            <h1 className="py-3 w-full space-x-12 font-bold text-[1.5rem]">
-              12 <span className="font-light text-[1rem]">this week</span>
-            </h1>
-            <p className="mt-3 inline space-x-3">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="green"
-                className="inline"
-              >
-                <path d="M7 24h-6v-6h6v6zm8-9h-6v9h6v-9zm8-4h-6v13h6v-13zm0-11l-6 1.221 1.716 1.708-6.85 6.733-3.001-3.002-7.841 7.797 1.41 1.418 6.427-6.39 2.991 2.993 8.28-8.137 1.667 1.66 1.201-6.001z" />
-              </svg>
-              <span className="text-green-500 font-medium">
-                + 12% from last week
-              </span>
-            </p>
-          </div>
-        </Notification>
-        <Notification
-          color="gray"
-          title="Total earnings"
-          withCloseButton={false}
-        >
-          <div>
-            <h1 className="py-3 w-full space-x-12 font-bold text-[1.5rem]">
-              Ksh. 12,500{" "}
-              <span className="font-light text-[1rem]">this week</span>
-            </h1>
-            <p className="mt-3 inline space-x-3">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="green"
-                className="inline"
-              >
-                <path d="M7 24h-6v-6h6v6zm8-9h-6v9h6v-9zm8-4h-6v13h6v-13zm0-11l-6 1.221 1.716 1.708-6.85 6.733-3.001-3.002-7.841 7.797 1.41 1.418 6.427-6.39 2.991 2.993 8.28-8.137 1.667 1.66 1.201-6.001z" />
-              </svg>
-              <span className="text-green-500 font-medium">
-                + 12% from last week
-              </span>
-            </p>
-          </div>
-        </Notification>
-        <div className="flex space-x-2 w-full justify-between">
-          <Notification
-            color="gray"
-            title="Products"
-            withCloseButton={false}
-            className="w-full"
-          >
-            <div>
-              <h1 className="py-3 w-full space-x-12 font-bold text-[1.5rem]">
-                120
-              </h1>
-            </div>
-          </Notification>
+  const GET_STAT_PAGE = `
+    query GET_STAT_PAGE{
+      getStatPage{
+        totalOrders
+    totalProducts
+    totalSales
+    chartData {
+      label
+      value
+    }
+    fastestMoving {
+      ordersPerMonth
+      product {
+        id
+        name
+      }
+    }
+    slowestMoving {
+      ordersPerMonth
+      product {
+        name
+      }
+    }
+      }
+    }
+  `;
 
-          <Notification
-            className="w-full"
-            color="gray"
-            title="Customers"
-            withCloseButton={false}
-          >
-            <div>
-              <h1 className="py-3 w-full space-x-12 font-bold text-[1.5rem]">
-                256
-              </h1>
-            </div>
-          </Notification>
-        </div>
+  const [{ data, fetching, error }, reexecuteQuery] = useQuery({
+    query: GET_STAT_PAGE,
+  });
+
+  console.log(error);
+
+  if (fetching) return <p>Loading...</p>;
+  if (error) return <p>Error...</p>;
+
+  return (
+    <div className="py-6 space-y-8 no-scrollbar">
+      <div className="grid-cols-1 space-y-2">
+        <Statistic
+          value={`Ksh. ${data?.getStatPage?.totalSales
+            .toString()
+            .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`}
+          label="Total Sales"
+          color="green"
+          icon={<IconWallet size={"2rem"} />}
+        />
+        <Statistic
+          value={data?.getStatPage?.totalOrders}
+          label="Total Complete Orders"
+          icon={<IconBoxSeam size={"2rem"} />}
+          color="orange"
+        />
+        <Statistic
+          value={data?.getStatPage?.totalProducts}
+          label="Total Products"
+          color="blue"
+          icon={<Icon123 size={"2rem"} />}
+        />
       </div>
+
       <div>
-        <DynamicBar />
+        <Card shadow="sm" padding="xs" radius="md" withBorder>
+          <p className="text-[0.8rem] text-gray-600">Sales Statistics</p>
+          <DynamicBar data={data?.getStatPage?.chartData} />
+        </Card>
+      </div>
+
+      <div>
+        <Card shadow="sm" padding="xs" radius="md" withBorder>
+          <p className="text-[0.8rem] text-gray-600">Visitors</p>
+        </Card>
+      </div>
+
+      <div>
+        <Card shadow="sm" padding="xs" radius="md" withBorder>
+          <p className="text-[0.8rem] text-gray-600">Fastest moving products</p>
+          <div className="p-4 max-h-[400px] overflow-y-auto mt-6">
+            {data?.getStatPage?.fastestMoving.map((moving) => (
+              <MovingProduct
+                opm={moving?.ordersPerMonth}
+                product={moving?.product}
+              />
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      <div>
+        <Card shadow="sm" padding="xs" radius="md" withBorder>
+          <p className="text-[0.8rem] text-gray-600">Slowest moving products</p>
+          <div className="p-4 max-h-[400px] overflow-y-auto mt-6">
+            {data?.getStatPage?.slowestMoving.map((moving) => (
+              <MovingProduct
+                opm={moving?.ordersPerMonth}
+                product={moving?.product}
+                color="red"
+              />
+            ))}
+          </div>
+        </Card>
       </div>
     </div>
   );
+};
+
+const MovingProduct = ({ product, opm, color }) => {
+  const [productModal, setProductModal] = useState(false);
+
+  return (
+    <div className="p-2 border-b-[1px] border-b-gray-300 flex justify-between ">
+      <div>
+        <Text lineClamp={1}>{product?.name}</Text>
+        <Badge color={color}>{opm} orders per month</Badge>
+      </div>
+      <Button
+        onClick={() => setProductModal(true)}
+        style={{ color: "#A18A68" }}
+        fw="lighter"
+        variant="subtle"
+      >
+        View
+      </Button>
+      <Modal
+        opened={productModal}
+        onClose={() => setProductModal(false)}
+        centered
+        withCloseButton={false}
+      >
+        <div className="flex justify-between">
+          <h1 className="py-6 px-3 font-bold text-[1.5rem]">Product</h1>
+          <Button
+            onClick={() => setProductModal((o) => !o)}
+            color="gray"
+            variant="subtle"
+            mt={24}
+          >
+            <IconX />
+          </Button>
+        </div>
+      </Modal>
+    </div>
+  );
+};
+
+const Orders = () => {
+  const [dateRange, setDateRange] = useState([null, null]);
+  const [startTimestamp, setStartTimestamp] = useState(null);
+  const [endTimestamp, setEndTimestamp] = useState(null);
+
+  const GET_ORDERS = `
+    query GET_ORDERS{
+      getAllOrders{
+        id
+        items{
+          product{
+            name
+            images
+            variants{
+              label
+              price
+              thumbnail
+            }
+          }
+          variant
+          salePrice
+          quantity
+        }
+        customer{
+          name
+          email
+          phoneNumber
+        }
+        deliveryLocation  {
+          lat
+          lng
+        }
+        payment{
+          code
+          timestamp    
+          amount
+        }
+        createdAt
+        deliveryTimestamp
+        dispatchTimestamp
+        pickUpTimestamp
+      }
+    }
+  `;
+
+  useEffect(() => {
+    if (dateRange[1]) {
+      setStartTimestamp(new Date(dateRange[0]).getTime());
+      setEndTimestamp(new Date(dateRange[1]).getTime());
+    }
+    if (!dateRange[0] && !dateRange[1]) {
+      setStartTimestamp(null);
+      setEndTimestamp(null);
+    }
+  }, [dateRange]);
+
+  const [{ data, fetching, error }, reexecuteQuery] = useQuery({
+    query: GET_ORDERS,
+  });
+
+  if (fetching) return <p>Fetching...</p>;
+  if (error) return <p>Error...</p>;
+
+  const getInProcessing = () => {
+    return data?.getAllOrders
+      ?.filter(
+        (order) =>
+          !order?.deliveryTimestamp &&
+          !order?.dispatchTimestamp &&
+          !order?.pickUpTimestamp
+      )
+      .filter((order) => {
+        if (startTimestamp && endTimestamp) {
+          return (
+            parseInt(order?.createdAt) >= startTimestamp &&
+            parseInt(order?.createdAt) <= endTimestamp
+          );
+        }
+        return order;
+      }).length;
+  };
+
+  const getInTransit = () => {
+    return data?.getAllOrders
+      ?.filter(
+        (order) =>
+          !order?.deliveryTimestamp &&
+          order?.dispatchTimestamp &&
+          !order?.pickUpTimestamp
+      )
+      .filter((order) => {
+        if (startTimestamp && endTimestamp) {
+          return (
+            parseInt(order?.createdAt) >= startTimestamp &&
+            parseInt(order?.createdAt) <= endTimestamp
+          );
+        }
+        return order;
+      }).length;
+  };
+
+  const getDelivered = () => {
+    return data?.getAllOrders
+      ?.filter(
+        (order) =>
+          (order?.deliveryTimestamp || order?.pickUpTimestamp) &&
+          order?.dispatchTimestamp
+      )
+      .filter((order) => {
+        if (startTimestamp && endTimestamp) {
+          return (
+            parseInt(order?.createdAt) >= startTimestamp &&
+            parseInt(order?.createdAt) <= endTimestamp
+          );
+        }
+        return order;
+      }).length;
+  };
+
+  return (
+    <div className="space-y-6">
+      <Group style={{ width: "100%" }} position="center">
+        <DatePickerInput
+          type="range"
+          placeholder="Pick dates range"
+          value={dateRange}
+          onChange={setDateRange}
+          clearable
+          style={{ width: "90%" }}
+        />
+      </Group>
+      <div className="flex max-w-full overflow-x-auto gap-6">
+        <Statistic
+          value={getInProcessing()}
+          label={"In processing"}
+          color="orange"
+          icon={<IconHomeCog size={"2rem"} />}
+        />
+        <Statistic
+          value={getInTransit()}
+          label={"In transit"}
+          color="blue"
+          icon={<IconTruckDelivery size={"2rem"} />}
+        />
+        <Statistic
+          value={getDelivered()}
+          label={"Delivered"}
+          color="green"
+          icon={<IconCheckupList size={"2rem"} />}
+        />
+      </div>
+      <Divider />
+
+      <div className="space-y-3">
+        {data?.getAllOrders
+          .filter((order) => {
+            if (startTimestamp && endTimestamp) {
+              return (
+                parseInt(order?.createdAt) >= startTimestamp &&
+                parseInt(order?.createdAt) <= endTimestamp
+              );
+            }
+            return order;
+          })
+          .sort((a, b) => Number(b?.createdAt) - Number(a?.createdAt))
+          .map((order) => (
+            <OrderAdmin order={order} refresh={reexecuteQuery} />
+          ))}
+      </div>
+    </div>
+  );
+};
+
+const Statistic = ({ value, label, icon, color }) => {
+  return (
+    <Card
+      shadow="sm"
+      padding="xs"
+      radius="md"
+      withBorder
+      style={{ minWidth: 200 }}
+    >
+      <div className="flex space-x-4">
+        {icon && (
+          <ActionIcon color={color} variant="light" size={58}>
+            {icon}
+          </ActionIcon>
+        )}
+        <div>
+          <h1 className="font-bold text-[1.5rem]">{value}</h1>
+          <p className="font-light text-[0.8rem] text-gray-700">{label}</p>
+        </div>
+      </div>
+    </Card>
+  );
+};
+
+const Transactions = () => {
+  const formatPhoneNumber = (phoneNumber) => {
+    const digitsOnly = phoneNumber?.replace(/\D/g, "");
+
+    const countryCode = digitsOnly?.slice(0, 3);
+
+    const remainingDigits = digitsOnly?.slice(3);
+    const groupedDigits = remainingDigits?.replace(/(\d{3})/g, "$1 ");
+
+    const formattedNumber = `${countryCode} ${groupedDigits?.trim()}`;
+    return formattedNumber;
+  };
+
+  const { query, refine, clear } = useSearchBox();
+
+  const Hit = ({ hit }) => {
+    return (
+      <div className="mb-6">
+        <Card shadow="sm" padding="xs" radius="md" withBorder>
+          <Group position="apart" mt="md" mb="xs">
+            <Badge color="green" variant="light" size="lg">
+              {query ? <Highlight attribute="code" hit={hit} /> : hit?.code}
+            </Badge>
+            <Text fw="lighter">
+              {hit?.createdAt
+                ? Date.now() - new Date(hit?.createdAt).getTime() >
+                  24 * 60 * 60 * 1000
+                  ? moment(new Date(hit?.createdAt)).format("Do MMMM, YYYY")
+                  : (Date.now() - new Date(hit?.createdAt).getTime()) /
+                      (1000 * 60) <
+                    60
+                  ? moment(new Date(hit?.createdAt)).startOf("minute").fromNow()
+                  : (Date.now() - new Date(hit?.createdAt).getTime()) /
+                      (1000 * 60 * 24) <
+                      24 &&
+                    moment(new Date(hit?.createdAt)).startOf("hour").fromNow()
+                : null}
+            </Text>
+          </Group>
+          <div className="flex justify-between">
+            <Text fw="lighter">
+              +
+              {query ? (
+                <Highlight attribute="phoneNumber" hit={hit} />
+              ) : (
+                formatPhoneNumber(hit?.phoneNumber)
+              )}
+            </Text>
+            <Text weight={700} color="green" fz={"lg"}>
+              + Ksh.{" "}
+              {hit?.amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+            </Text>
+          </div>
+        </Card>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      <Group style={{ width: "100%" }} position="center">
+        <Input
+          style={{ width: "100%" }}
+          icon={<IconSearch size="1rem" />}
+          placeholder="Search phone number ex. 254..."
+          onChange={(e) => refine(e.target.value)}
+        />
+      </Group>
+
+      <div className="space-y-3">
+        <Hits hitComponent={Hit} />
+      </div>
+    </div>
+  );
+};
+
+const Sections = () => {
+  return <div>sections</div>;
 };

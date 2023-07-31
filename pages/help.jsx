@@ -26,7 +26,7 @@ export default function Help() {
             </Accordion.Panel>
           </Accordion.Item>
 
-          <Accordion.Item value="focus-ring">
+          <Accordion.Item value="privacy-policy">
             <Accordion.Control>Privacy Policy</Accordion.Control>
             <Accordion.Panel>
               With new :focus-visible pseudo-class focus ring appears only when
@@ -34,7 +34,7 @@ export default function Help() {
             </Accordion.Panel>
           </Accordion.Item>
 
-          <Accordion.Item value="focus-ring">
+          <Accordion.Item value="return&exchanges">
             <Accordion.Control>Return & Exchanges</Accordion.Control>
             <Accordion.Panel>
               With new :focus-visible pseudo-class focus ring appears only when

@@ -51,10 +51,18 @@ export default function Home() {
       </div>
 
       <div className="p-4 py-0">
-        <Carousel showThumbs={false} showStatus={false}>
-          <div>
-            <img src="/c1.png" className="w-full" />
-          </div>
+        <Carousel
+          showThumbs={false}
+          showStatus={false}
+          infiniteLoop
+          autoPlay
+          showArrows={false}
+        >
+          {["/slider3.jpg", "slider2.jpg", "slider1.jpg"].map((image) => (
+            <div>
+              <img src={image} className="w-full" />
+            </div>
+          ))}
         </Carousel>
       </div>
 

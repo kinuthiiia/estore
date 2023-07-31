@@ -3,8 +3,8 @@ import {
   Card,
   Divider,
   Drawer,
-  Group,
   Indicator,
+  Modal,
   NavLink,
   Radio,
   Space,
@@ -13,34 +13,168 @@ import {
   Timeline,
   Transition,
   UnstyledButton,
+  useMantineTheme,
 } from "@mantine/core";
 import {
+  IconCheck,
   IconChevronLeft,
   IconChevronRight,
+  IconExclamationMark,
   IconLogout,
   IconUser,
 } from "@tabler/icons";
 import { Turn as Hamburger } from "hamburger-react";
-import { useContext, useEffect, useLayoutEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import CartItem from "./cartitem";
 
 import { Userdatacontext } from "../context/userdata";
 import { useRouter } from "next/router";
 import { signOut } from "next-auth/react";
 import Address from "./address";
+import { useMutation } from "urql";
+import { notifications } from "@mantine/notifications";
+import io from "socket.io-client";
+import Spinner from "react-svg-spinner";
+import logo from "../public/logo.svg";
+import Image from "next/image";
+
+let socket;
 
 export default function Logoheader() {
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();
+  const theme = useMantineTheme();
 
   const { data } = useContext(Userdatacontext);
   const [selectedAddress, setSelectedAddress] = useState(
     () => data?.addresses.filter((address) => address?.default == true)[0]?.id
   );
   const [selectedPayment, setSelectedPayment] = useState("pay-now");
-  const [loading, setLoading] = useState(false);
+
+  const [openModal, setOpenModal] = useState(false);
+  const [status, setStatus] = useState("");
+  const [loadingPay, setLoadingPay] = useState(false);
+  const [txDetails, setTxDetails] = useState({});
+
+  useEffect(() => {
+    socketInitializer(data);
+
+    return () => {
+      socket ? socket.disconnect() : null;
+    };
+  }, [data, selectedAddress]);
+
+  async function socketInitializer(data) {
+    // ping the server to setup a socket if not already running
+    await fetch("/api/socket/");
+
+    // Setup the Socket
+    socket = io({
+      transports: ["websocket"],
+    });
+
+    // Manage socket message events
+    socket.on("mpesaCallback", (stkCallback) => {
+      setLoadingPay(false);
+      console.log(stkCallback);
+      setTxDetails(stkCallback);
+      if (stkCallback?.ResultCode == 0) {
+        let _items = [];
+
+        data?.cart.forEach((cartItem) => {
+          let entry = {
+            product: cartItem?.product?.id,
+            salePrice: cartItem?.product?.variants?.filter(
+              (variant) => variant?.label == cartItem?.variant
+            )[0].price,
+            quantity: cartItem?.quantity,
+            variant: cartItem?.variant,
+          };
+          _items.push(entry);
+        });
+
+        let _payment = {
+          code: stkCallback?.CallbackMetadata?.Item.filter(
+            (item) => item.Name == "MpesaReceiptNumber"
+          )[0].Value,
+          timestamp: stkCallback?.CallbackMetadata?.Item.filter(
+            (item) => item.Name == "TransactionDate"
+          )[0].Value,
+          amount: stkCallback?.CallbackMetadata?.Item.filter(
+            (item) => item.Name == "Amount"
+          )[0].Value,
+          phoneNumber: stkCallback?.CallbackMetadata?.Item.filter(
+            (item) => item.Name == "PhoneNumber"
+          )[0].Value,
+        };
+
+        let _deliveryLocation = {
+          lat: data?.addresses.filter(
+            (_address) => _address.id == selectedAddress
+          )[0]?.lat,
+          lng: data?.addresses.filter(
+            (_address) => _address.id == selectedAddress
+          )[0]?.lng,
+        };
+
+        let order = {
+          items: JSON.stringify(_items),
+          customer: data?.id,
+          payment: JSON.stringify(_payment),
+          _deliveryLocation: JSON.stringify(_deliveryLocation),
+        };
+
+        _checkout(order)
+          .then(({ data, error }) => {
+            if (!error) {
+              notifications.show({
+                title: "Order complete.",
+                message: "Track your orders in the orders section",
+                icon: <IconCheck />,
+                color: "green",
+              });
+            } else {
+              notifications.show({
+                title: "Something occured",
+                icon: <IconExclamationMark />,
+                message: "Payment received but order completion failed",
+                color: "red",
+              });
+            }
+          })
+          .catch((err) => {
+            notifications.show({
+              title: "Something occured",
+              icon: <IconExclamationMark />,
+              message: "Payment received but order completion failed",
+              color: "red",
+            });
+          });
+      }
+    });
+  }
+
+  const CHECKOUT = `
+      mutation CHECKOUT(
+        $items: String
+        $customer: ID
+        $payment: String
+        $_deliveryLocation: String
+      ){
+        checkout(
+          items: $items
+          customer: $customer
+          payment: $payment
+          _deliveryLocation: $_deliveryLocation
+        ){
+          id
+        }
+      }
+  `;
+
+  const [_, _checkout] = useMutation(CHECKOUT);
 
   const getPrice = () => {
     let sum = 0;
@@ -61,73 +195,59 @@ export default function Logoheader() {
     return 150;
   };
 
-  const makePayment = new Promise(function (resolve, reject) {
-    setTimeout(() => {
-      resolve({
-        code: "XYZ",
-        timestamp: Date.now(),
-        amount: getPrice() + getEstimatedFees(),
-        name: "Stephen Kinuthia",
+  const handlePay = async () => {
+    setTxDetails({});
+    setLoadingPay(true);
+
+    if (!selectedAddress) {
+      notifications.show({
+        title: "Please select a delivery address",
+        color: "orange",
       });
-    }, 5000);
-  });
-
-  const handlePlaceOrder = () => {
-    setLoading(true);
-
-    if (selectedPayment == "pay-now") {
-      makePayment.then(({ code, timestamp, amount, name }) => {
-        let _items = [];
-
-        data?.cart.forEach((cartItem) => {
-          let entry = {
-            product: cartItem.product.id,
-            salePrice: cartItem.product.variants.filter(
-              (variant) => variant?.label == cartItem?.variant
-            )[0].price,
-            quantity: cartItem.quantity,
-          };
-          _items.push(entry);
-        });
-
-        let _payment = {
-          code,
-          timestamp: timestamp.toString(),
-          name,
-          amount,
-        };
-
-        let _deliveryLocation = {
-          lat: data?.addresses.filter(
-            (_address) => _address.id == selectedAddress
-          )[0].lat,
-          lng: data?.addresses.filter(
-            (_address) => _address.id == selectedAddress
-          )[0].lng,
-        };
-
-        let order = {
-          items: JSON.stringify(_items),
-          customer: data?.id,
-          payment: JSON.stringify(_payment),
-          _deliveryLocation: JSON.stringify(_deliveryLocation),
-        };
-
-        console.log(order);
-        setLoading(false);
-        // _createOrder(order).then(() => {
-
-        // })
-      });
+      setLoadingPay(false);
+      return;
     }
 
-    return;
+    if (selectedPayment == "pay-now") {
+      try {
+        const response = await fetch(`/api/initiateSTK`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            amount: getPrice() + getEstimatedFees(),
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+
+        const data = await response.json();
+
+        if (JSON.parse(data)?.ResponseCode === "0") {
+          setStatus("STK push sent");
+          setOpenModal(true);
+          return;
+        }
+        return;
+      } catch (error) {
+        setStatus("Error occured , Retry");
+        setLoadingPay(false);
+        return;
+      }
+    }
+
+    alert(`Pay later not yet implemented`);
   };
 
   return (
     <div>
       <div className="flex w-full p-4 justify-between">
-        <div>logo</div>
+        <div>
+          <Image height={40} priority src={logo} alt="logo" />
+        </div>
         <div className="space-x-3 flex">
           <div
             className="mt-3 cursor-pointer"
@@ -452,11 +572,87 @@ export default function Logoheader() {
                 size="sm"
                 uppercase
                 fullWidth
-                onClick={handlePlaceOrder}
-                loading={loading}
+                onClick={!status ? handlePay : null}
+                loading={loadingPay}
               >
-                complete order
+                {status ? status : "Complete Order"}
               </Button>
+              <Modal
+                opened={openModal}
+                centered
+                overlayProps={{
+                  color: theme.colors.gray[9],
+                  opacity: 0.7,
+                  blur: 3,
+                }}
+                onClose={() => setLoadingPay(false)}
+                withCloseButton={false}
+                size="xs"
+                transitionProps={{ transition: "fade", duration: 200 }}
+              >
+                {/* {txDetails && txDetails?.ResultCode == 0 && ( */}
+                <div className="relative h-[50vh]">
+                  {Object.keys(txDetails).length === 0 ? (
+                    <div className="absolute w-[50%] top-[10%] left-[50%] translate-x-[-50%]">
+                      <Spinner size="128px" thickness={3} />
+                    </div>
+                  ) : (
+                    <img
+                      src={
+                        txDetails?.ResultCode == 0
+                          ? "/success.jpg"
+                          : "/error.jpg"
+                      }
+                      className="absolute w-[50%] top-[10%] left-[50%] translate-x-[-50%]"
+                    />
+                  )}
+                  <div className="space-y-8 absolute top-[50%] w-full">
+                    <h1 className="font-bold text-[1.4rem] text-[#A18A68] w-full text-center">
+                      {Object.keys(txDetails).length === 0
+                        ? "Waiting"
+                        : txDetails?.ResultCode == 0
+                        ? "Payment Successful!"
+                        : "Oops!"}
+                    </h1>
+                    <p className="px-4 text-center">
+                      {Object.keys(txDetails).length === 0
+                        ? "An STK push has been sent to you"
+                        : txDetails?.ResultCode == 0
+                        ? "Thank you for purchasing. Your payment was successful"
+                        : txDetails?.ResultCode == 1037
+                        ? "Upgrade sim card or make sure it is online"
+                        : txDetails?.ResultCode == 1025
+                        ? "System error"
+                        : txDetails?.ResultCode == 1032
+                        ? "STK push cancelled"
+                        : txDetails?.ResultCode == 1
+                        ? "Insufficient balance"
+                        : txDetails?.ResultCode == 2001
+                        ? "Wrong PIN entered"
+                        : txDetails?.ResultCode == 1019
+                        ? "Transaction expired. Try again"
+                        : txDetails?.ResultCode == 1001
+                        ? "Ongoing USSD session noticed"
+                        : null}
+                    </p>
+                    {Object.keys(txDetails).length === 0 ? null : (
+                      <Button
+                        style={{ background: "#A18A68" }}
+                        fullWidth
+                        onClick={
+                          txDetails && txDetails?.ResultCode == 0
+                            ? router.reload
+                            : handlePay
+                        }
+                      >
+                        {txDetails && txDetails?.ResultCode == 0
+                          ? "Continue shopping"
+                          : "Retry payment"}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </Modal>
             </div>
           </div>
         </div>

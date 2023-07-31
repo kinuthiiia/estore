@@ -1,61 +1,60 @@
 import ReactECharts from "echarts-for-react";
 import { useEffect, useState } from "react";
 
-export default function BarChart({}) {
+export default function BarChart({ data }) {
   const [option, setOption] = useState({});
 
+  const formatCurrency = (value) => {
+    const suffixes = ["", "K", "M", "B", "T"]; // Add more suffixes as needed for larger values
+    const tier = (Math.log10(Math.abs(value)) / 3) | 0;
+    if (tier === 0) return value; // No need to format
+    const suffix = suffixes[tier];
+    const scale = Math.pow(10, tier * 3);
+    const scaledValue = value / scale;
+    return scaledValue.toFixed(1) + suffix;
+  };
+
   useEffect(() => {
-    const colors = ["#A18A68", "#56496C"];
+    const colors = ["#A18A68"];
     const barOptions = {
       color: colors,
       tooltip: {
         trigger: "axis",
-        // axisPointer: {
-        //   type: "cross",
-        // },
+        axisPointer: {
+          type: "shadow",
+        },
       },
       toolbox: {
         feature: {
           dataView: { show: false, readOnly: false },
           restore: { show: false },
-          saveAsImage: { show: true },
+          saveAsImage: { show: false },
         },
       },
 
       xAxis: [
         {
           type: "category",
-          axisTick: {
-            alignWithLabel: true,
+          axisLine: {
+            show: false,
           },
-          data: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+          axisTick: {
+            show: false,
+          },
+          data: data?.map(({ label }) => label),
         },
       ],
       yAxis: [
         {
           type: "value",
-          name: "Earnings",
           alignTicks: true,
-          offset: 80,
           axisLine: {
             show: false,
-            lineStyle: {
-              color: colors[1],
-            },
           },
           axisLabel: {
-            formatter: "Ksh. {value}",
-          },
-        },
-        {
-          type: "value",
-          name: "Orders",
-          position: "left",
-          alignTicks: true,
-          axisLine: {
-            show: false,
-            lineStyle: {
-              color: colors[2],
+            formatter: (value) => {
+              // Implement the custom formatter function here
+              return formatCurrency(value);
             },
           },
         },
@@ -69,18 +68,12 @@ export default function BarChart({}) {
               barBorderRadius: [50, 50],
             },
             normal: {
-              barBorderRadius: [50, 50, 0, 0],
+              barBorderRadius: [50, 50, 50, 50],
             },
           },
           barWidth: "40%",
-          yAxisIndex: 0,
-          data: [2000, 1000, 1300, 5000, 2300, 650, 1760],
-        },
-        {
-          name: "Orders",
-          type: "line",
-          yAxisIndex: 1,
-          data: [2, 1, 3, 2, 4, 10, 2],
+
+          data: data?.map(({ value }) => value),
         },
       ],
     };
