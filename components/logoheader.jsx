@@ -37,6 +37,7 @@ import io from "socket.io-client";
 import Spinner from "react-svg-spinner";
 import logo from "../public/logo.svg";
 import Image from "next/image";
+import CustomRefinementList from "./refinementlist";
 
 let socket;
 
@@ -309,9 +310,10 @@ export default function Logoheader() {
               }
               childrenOffset={28}
             >
-              <NavLink label="First child link" />
-              <NavLink label="Second child link" />
-              <NavLink label="Third child link" />
+              <CustomRefinementList
+                attribute="category"
+                sortBy={["count:desc", "name:asc"]}
+              />
             </NavLink>
             <NavLink
               label={
@@ -373,7 +375,15 @@ export default function Logoheader() {
                   <IconLogout className="mt-2" />
                   <span
                     className="hover:cursor-pointer"
-                    onClick={data && signOut}
+                    onClick={() => {
+                      if (data) {
+                        signOut();
+                        notifications.show({
+                          title: "You are now logged out",
+                          color: "green",
+                        });
+                      }
+                    }}
                   >
                     Log out
                   </span>
