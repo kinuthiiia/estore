@@ -44,7 +44,7 @@ export default function handler(req, res) {
               PartyB: 174379,
               PhoneNumber: 254748920306,
               CallBackURL:
-                "https://estore-kinuthiiia.vercel.app/api/mpesaCallback",
+                "https://estore-rho-bay.vercel.app/api/mpesaCallback",
               AccountReference: "Elektonics",
               TransactionDesc: "Payment of X",
             })
