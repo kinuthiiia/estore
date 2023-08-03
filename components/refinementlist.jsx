@@ -22,7 +22,10 @@ export default function CustomRefinementList(props) {
     <div>
       {items.map((item) => (
         <div className="flex space-x-4 p-2">
-          <a href={`/category/${item?.value}`} className="text-[0.8rem] block">
+          <a
+            href={`/category/${item?.value}`}
+            className=" uppercase text-[0.8rem] block"
+          >
             {item?.value}
           </a>
 
