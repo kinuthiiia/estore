@@ -62,7 +62,7 @@ export default function ProductCard({ hit }) {
   };
 
   return (
-    <div className="col-span-1 space-y-2 relative hover:cursor-pointer min-w-[30vw]">
+    <div className=" col-span-1 space-y-2 relative hover:cursor-pointer min-w-[30vw]">
       {data?.saved.filter((item) => item.id == hit?.id).length > 0 ? (
         <UnstyledButton
           style={{ position: "absolute", top: 6, right: 6, zIndex: 99 }}
