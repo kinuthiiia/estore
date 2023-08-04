@@ -466,7 +466,7 @@ export default function Logoheader() {
                 <span className="block text-[#909090] mb-3">
                   {data?.cart?.length} items
                 </span>
-                <div className="space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto">
+                <div className="space-y-6 overflow-y-auto">
                   {data?.cart.map((cartItem, i) => (
                     <CartItem key={i} order={cartItem} />
                   ))}
