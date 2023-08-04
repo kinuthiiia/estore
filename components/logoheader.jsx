@@ -569,7 +569,7 @@ export default function Logoheader() {
               </h2>
             </div>
           </div>
-          <div className="p-2 pt-6">
+          <div className="p-2 pt-6 space-y-12">
             <Timeline color="dark" active={2} bulletSize={24} lineWidth={2}>
               <Timeline.Item title="Order summary">
                 <Card shadow="sm" padding="lg" radius="md" withBorder>
@@ -639,18 +639,16 @@ export default function Logoheader() {
 
             <Space h={36} />
 
-            <div className="absolute bottom-3 left-[50%] translate-x-[-50%] w-[90%] ">
-              <Button
-                color="dark"
-                size="sm"
-                uppercase
-                fullWidth
-                onClick={!status ? handlePay : null}
-                loading={loadingPay}
-              >
-                {status ? status : "Complete Order"}
-              </Button>
-            </div>
+            <Button
+              color="dark"
+              size="sm"
+              uppercase
+              fullWidth
+              onClick={!status ? handlePay : null}
+              loading={loadingPay}
+            >
+              {status ? status : "Complete Order"}
+            </Button>
 
             <Modal
               opened={openModal}
