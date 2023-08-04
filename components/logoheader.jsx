@@ -447,7 +447,7 @@ export default function Logoheader() {
         title={null}
         withCloseButton={false}
       >
-        <div className="h-[96vh]">
+        <div>
           <div className="sticky top-0 bg-white z-40">
             <div className="p-3 relative">
               <IconChevronLeft
@@ -472,12 +472,17 @@ export default function Logoheader() {
                   ))}
                 </div>
               </div>
-              <div className="fixed w-[93%] bottom-0 bg-white z-40 p-4 border-t-[1px] border-gray-400 space-y-5">
+              <div className=" p-4 border-t-[1px] border-gray-400 space-y-5">
                 <div className="flex justify-between">
                   <p className="font-medium">
                     Subtotal ({data?.cart?.length} items)
                   </p>
-                  <p className="text-[#A18A68]">Ksh. {getPrice()}</p>
+                  <p className="text-[#A18A68]">
+                    Ksh.{" "}
+                    {getPrice()
+                      .toString()
+                      .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                  </p>
                 </div>
                 <div className="flex justify-between">
                   <div>
@@ -486,13 +491,21 @@ export default function Logoheader() {
                       Based on your default address
                     </span>
                   </div>
-                  <p className="text-[#A18A68]">Ksh. {getEstimatedFees()}</p>
+                  <p className="text-[#A18A68]">
+                    Ksh.{" "}
+                    {getEstimatedFees()
+                      .toString()
+                      .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                  </p>
                 </div>
                 <Divider />
                 <div className="flex justify-between">
                   <p className="font-medium">Total</p>
                   <p className="text-[#A18A68]">
-                    ≈ Ksh. {getPrice() + getEstimatedFees()}
+                    ≈ Ksh.{" "}
+                    {(getPrice() + getEstimatedFees())
+                      .toString()
+                      .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
                   </p>
                 </div>
                 <Button
@@ -544,7 +557,7 @@ export default function Logoheader() {
         title={null}
         withCloseButton={false}
       >
-        <div className="h-[96vh]">
+        <div>
           <div className="sticky top-0 bg-white z-40">
             <div className="p-3 relative">
               <IconChevronLeft
@@ -623,6 +636,8 @@ export default function Logoheader() {
                 </Radio.Group>
               </Timeline.Item>
             </Timeline>
+
+            <Space h={36} />
 
             <div className="absolute bottom-3 left-[50%] translate-x-[-50%] w-[90%] ">
               <Button

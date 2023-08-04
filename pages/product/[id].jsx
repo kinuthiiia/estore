@@ -259,6 +259,7 @@ export default function Product() {
                 (cartItem) => cartItem?.product.id == router?.query?.id
               ) && product.variants.length == 1
             }
+            loading={loading}
             onClick={handleAddToCart}
           >
             <p className="font-medium">add to cart</p>

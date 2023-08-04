@@ -25,6 +25,7 @@ body {
   font-weight: bold;
   scrollbar-width: none;
   -ms-overflow-style: none; /* IE 10+ */
+  touch-action: none;
 }
 
 body::-webkit-scrollbar {
