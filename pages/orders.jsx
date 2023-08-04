@@ -1,13 +1,14 @@
-import { Button, Space, Text } from "@mantine/core";
+import { Button, Select, Space, Text } from "@mantine/core";
 import { Footer, Logoheader, Order } from "../components";
 import { useRouter } from "next/router";
 import { useQuery } from "urql";
 import { Userdatacontext } from "../context/userdata";
-import { useContext } from "react";
+import { useContext, useState } from "react";
 
 export default function Orders() {
   const router = useRouter();
   const { data: userData } = useContext(Userdatacontext);
+  const [filter, setFilter] = useState("");
 
   const GET_ORDERS = `
       query GET_ORDERS(
@@ -60,10 +61,45 @@ export default function Orders() {
   return (
     <div>
       <Logoheader />
-      <div className="p-8 space-y-6">
-        <h1 className="font-medium text-[1.5rem]">My orders</h1>
 
+      <div className="space-y-8 mt-[80px] relative bg-red-400">
+        <div className="w-full fixed top-[72px] left-0 z-40 bg-white pb-3 px-8">
+          <div className="flex justify-between mb-3">
+            <h1 className="font-medium text-[1.5rem] mt-2">My orders</h1>
+            <span className="block text-[#909090] mt-3">
+              {data?.getOrders.length} items
+            </span>
+          </div>
+          <Select
+            clearable
+            value={filter}
+            onChange={setFilter}
+            placeholder="Filter orders"
+            data={[
+              { value: "processing", label: "In processing" },
+              { value: "transit", label: "In transit" },
+              { value: "delivered", label: "Delivered" },
+              { value: "cancelled", label: "Cancelled" },
+            ]}
+          />
+        </div>
+      </div>
+
+      <div className="p-4 mt-[170px] relative">
         {data?.getOrders
+          .filter((order) => {
+            if (!filter) {
+              return order;
+            } else if (filter == "delivered") {
+              return order?.deliveryTimestamp && order?.dispatchTimestamp;
+            } else if (filter == "transit") {
+              return order?.dispatchTimestamp && !order?.deliveryTimestamp;
+            } else if (filter == "processing") {
+              return !order?.dispatchTimestamp && !order?.deliveryTimestamp;
+            } else {
+              return null;
+            }
+          })
           .sort((a, b) => Number(b?.createdAt) - Number(a?.createdAt))
           .map((order, i) => (
             <Order key={i} order={order} />
@@ -87,9 +123,8 @@ export default function Orders() {
             </Button>
           </>
         )}
-
-        <Footer />
       </div>
+      <Footer />
     </div>
   );
 }

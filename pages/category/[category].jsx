@@ -30,7 +30,16 @@ export default function Saved() {
     <div>
       <Logoheader />
 
-      <div className="p-4 space-y-8">
+      <div className="mt-[80px] relative">
+        <div className="flex justify-between px-8 w-full fixed top-[72px] left-0 z-40 bg-white pb-3">
+          <h1 className="font-medium text-[1.5rem] mt-2">{category}</h1>
+          <span className="block text-[#909090] mt-3">
+            <Stats />
+          </span>
+        </div>
+      </div>
+
+      <div className="p-4 space-y-8 mt-[130px] relative">
         <InstantSearch
           searchClient={searchClient}
           indexName="thrifthub"
@@ -43,15 +52,15 @@ export default function Saved() {
             },
           }}
         >
-          <ProductList category={category} />
+          <ProductList />
         </InstantSearch>
-        <Footer />
       </div>
+      <Footer />
     </div>
   );
 }
 
-const ProductList = ({ category }) => {
+const ProductList = () => {
   const {
     hits,
     currentPageHits,
@@ -64,16 +73,10 @@ const ProductList = ({ category }) => {
   } = useInfiniteHits();
 
   return (
-    <>
-      <h1 className="font-medium text-[1.5rem]">{category}</h1>
-      <span className="block text-[#909090] mb-3">
-        <Stats />
-      </span>
-      <div className="grid grid-cols-2 gap-8">
-        {currentPageHits.map((_hit, i) => (
-          <ProductCard key={i} hit={_hit} />
-        ))}
-      </div>
-    </>
+    <div className="grid grid-cols-2 gap-8">
+      {currentPageHits.map((_hit, i) => (
+        <ProductCard key={i} hit={_hit} />
+      ))}
+    </div>
   );
 };

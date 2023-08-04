@@ -30,7 +30,7 @@ export default function Home() {
     <div>
       <Logoheader />
 
-      <div className="mt-[80px] z-[-1]">
+      <div className="mt-[80px] relative">
         <div className="p-4">
           <SpotlightProvider
             actions={hits}

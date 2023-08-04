@@ -246,7 +246,7 @@ export default function Logoheader() {
 
   return (
     <div>
-      <div className="w-full fixed top-0 left-0">
+      <div className="w-full fixed top-0 left-0 z-50">
         <div className="md:flex items-center justify-between bg-white py-4 md:px-10 px-7">
           <div className="cursor-pointer" onClick={() => router.push(`/`)}>
             <Image height={40} priority src={logo} alt="logo" />
@@ -537,6 +537,7 @@ export default function Logoheader() {
           )}
         </div>
       </Drawer>
+
       <Drawer
         position="right"
         opened={checkoutOpen}
@@ -556,7 +557,7 @@ export default function Logoheader() {
             </div>
           </div>
           <div className="p-2 pt-6">
-            <Timeline color="dark" active={1} bulletSize={24} lineWidth={2}>
+            <Timeline color="dark" active={2} bulletSize={24} lineWidth={2}>
               <Timeline.Item title="Order summary">
                 <Card shadow="sm" padding="lg" radius="md" withBorder>
                   <div className="space-y-2 p-2">
@@ -622,8 +623,8 @@ export default function Logoheader() {
                 </Radio.Group>
               </Timeline.Item>
             </Timeline>
-            <Space h={36} />
-            <div className="fixed w-[90%] bottom-0 bg-white z-40 p-4 space-y-5">
+
+            <div className="absolute bottom-3 left-[50%] translate-x-[-50%] w-[90%] ">
               <Button
                 color="dark"
                 size="sm"
@@ -634,83 +635,82 @@ export default function Logoheader() {
               >
                 {status ? status : "Complete Order"}
               </Button>
-              <Modal
-                opened={openModal}
-                centered
-                overlayProps={{
-                  color: theme.colors.gray[9],
-                  opacity: 0.7,
-                  blur: 3,
-                }}
-                onClose={() => setLoadingPay(false)}
-                withCloseButton={false}
-                size="xs"
-                transitionProps={{ transition: "fade", duration: 200 }}
-              >
-                {/* {txDetails && txDetails?.ResultCode == 0 && ( */}
-                <div className="relative h-[50vh]">
-                  {Object.keys(txDetails).length === 0 ? (
-                    <div className="absolute w-[50%] top-[10%] left-[50%] translate-x-[-50%]">
-                      <Spinner size="128px" thickness={3} />
-                    </div>
-                  ) : (
-                    <img
-                      src={
-                        txDetails?.ResultCode == 0
-                          ? "/success.jpg"
-                          : "/error.jpg"
-                      }
-                      className="absolute w-[50%] top-[10%] left-[50%] translate-x-[-50%]"
-                    />
-                  )}
-                  <div className="space-y-8 absolute top-[50%] w-full">
-                    <h1 className="font-bold text-[1.4rem] text-[#A18A68] w-full text-center">
-                      {Object.keys(txDetails).length === 0
-                        ? "Waiting"
-                        : txDetails?.ResultCode == 0
-                        ? "Payment Successful!"
-                        : "Oops!"}
-                    </h1>
-                    <p className="px-4 text-center">
-                      {Object.keys(txDetails).length === 0
-                        ? "An STK push has been sent to you"
-                        : txDetails?.ResultCode == 0
-                        ? "Thank you for purchasing. Your payment was successful"
-                        : txDetails?.ResultCode == 1037
-                        ? "Upgrade sim card or make sure it is online"
-                        : txDetails?.ResultCode == 1025
-                        ? "System error"
-                        : txDetails?.ResultCode == 1032
-                        ? "STK push cancelled"
-                        : txDetails?.ResultCode == 1
-                        ? "Insufficient balance"
-                        : txDetails?.ResultCode == 2001
-                        ? "Wrong PIN entered"
-                        : txDetails?.ResultCode == 1019
-                        ? "Transaction expired. Try again"
-                        : txDetails?.ResultCode == 1001
-                        ? "Ongoing USSD session noticed"
-                        : null}
-                    </p>
-                    {Object.keys(txDetails).length === 0 ? null : (
-                      <Button
-                        style={{ background: "#A18A68" }}
-                        fullWidth
-                        onClick={
-                          txDetails && txDetails?.ResultCode == 0
-                            ? router.reload
-                            : handlePay
-                        }
-                      >
-                        {txDetails && txDetails?.ResultCode == 0
-                          ? "Continue shopping"
-                          : "Retry payment"}
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </Modal>
             </div>
+
+            <Modal
+              opened={openModal}
+              centered
+              overlayProps={{
+                color: theme.colors.gray[9],
+                opacity: 0.7,
+                blur: 3,
+              }}
+              onClose={() => setLoadingPay(false)}
+              withCloseButton={false}
+              size="xs"
+              transitionProps={{ transition: "fade", duration: 200 }}
+            >
+              {/* {txDetails && txDetails?.ResultCode == 0 && ( */}
+              <div className="relative h-[50vh]">
+                {Object.keys(txDetails).length === 0 ? (
+                  <div className="absolute w-[50%] top-[10%] left-[50%] translate-x-[-50%]">
+                    <Spinner size="128px" thickness={3} />
+                  </div>
+                ) : (
+                  <img
+                    src={
+                      txDetails?.ResultCode == 0 ? "/success.jpg" : "/error.jpg"
+                    }
+                    className="absolute w-[50%] top-[10%] left-[50%] translate-x-[-50%]"
+                  />
+                )}
+                <div className="space-y-8 absolute top-[50%] w-full">
+                  <h1 className="font-bold text-[1.4rem] text-[#A18A68] w-full text-center">
+                    {Object.keys(txDetails).length === 0
+                      ? "Waiting"
+                      : txDetails?.ResultCode == 0
+                      ? "Payment Successful!"
+                      : "Oops!"}
+                  </h1>
+                  <p className="px-4 text-center">
+                    {Object.keys(txDetails).length === 0
+                      ? "An STK push has been sent to you"
+                      : txDetails?.ResultCode == 0
+                      ? "Thank you for purchasing. Your payment was successful"
+                      : txDetails?.ResultCode == 1037
+                      ? "Upgrade sim card or make sure it is online"
+                      : txDetails?.ResultCode == 1025
+                      ? "System error"
+                      : txDetails?.ResultCode == 1032
+                      ? "STK push cancelled"
+                      : txDetails?.ResultCode == 1
+                      ? "Insufficient balance"
+                      : txDetails?.ResultCode == 2001
+                      ? "Wrong PIN entered"
+                      : txDetails?.ResultCode == 1019
+                      ? "Transaction expired. Try again"
+                      : txDetails?.ResultCode == 1001
+                      ? "Ongoing USSD session noticed"
+                      : null}
+                  </p>
+                  {Object.keys(txDetails).length === 0 ? null : (
+                    <Button
+                      style={{ background: "#A18A68" }}
+                      fullWidth
+                      onClick={
+                        txDetails && txDetails?.ResultCode == 0
+                          ? router.reload
+                          : handlePay
+                      }
+                    >
+                      {txDetails && txDetails?.ResultCode == 0
+                        ? "Continue shopping"
+                        : "Retry payment"}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </Modal>
           </div>
         </div>
       </Drawer>

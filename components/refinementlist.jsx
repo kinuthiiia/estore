@@ -16,8 +16,6 @@ export default function CustomRefinementList(props) {
     toggleShowMore,
   } = useRefinementList(props);
 
-  console.log(items?.value);
-
   return (
     <div>
       {items.map((item) => (

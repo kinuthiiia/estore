@@ -25,6 +25,7 @@ export default function Login() {
   const { data } = useContext(Userdatacontext);
 
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [loadingAddress, setLoadingAddress] = useState(false);
 
   const [user, setUser] = useState({
@@ -105,8 +106,16 @@ export default function Login() {
   };
 
   const handleSaveAddress = () => {
+    if (!address?.label) {
+      notifications.show({
+        title: "No address label entered",
+        message: "Address label help you remember the saved location",
+        color: "orange",
+      });
+      return;
+    }
+    setLoadingAddress(true);
     const successCallback = (position) => {
-      setLoadingAddress(true);
       _addAddress({
         label: address?.label,
         lat: position.coords.latitude,
@@ -145,14 +154,14 @@ export default function Login() {
     navigator.geolocation.getCurrentPosition(successCallback, errorCallback);
   };
 
-  if (session) {
+  if (typeof session !== "undefined" && session) {
     return (
       <div>
         <Logoheader />
         <div className="p-4 space-y-8">
           <h1 className="font-medium text-[1.5rem]">My account</h1>
           <div>
-            <Tabs color="dark" defaultValue="dashboard">
+            <Tabs value={activeTab} onTabChange={setActiveTab} color="dark">
               <Tabs.List>
                 <Tabs.Tab value="dashboard">Dashboard</Tabs.Tab>
                 <Tabs.Tab value="addresses">Addresses</Tabs.Tab>
@@ -175,11 +184,17 @@ export default function Login() {
                   </Text>
                   <Text className="font-medium">
                     From your account dashboard you can manage your{" "}
-                    <span className="hover:cursor-pointer text-[#A18A68]">
-                      shipping and billing addresses
+                    <span
+                      onClick={() => setActiveTab("addresses")}
+                      className="hover:cursor-pointer text-[#A18A68]"
+                    >
+                      shipping addresses
                     </span>{" "}
                     and edit your{" "}
-                    <span className="hover:cursor-pointer text-[#A18A68]">
+                    <span
+                      onClick={() => setActiveTab("account_details")}
+                      className="hover:cursor-pointer text-[#A18A68]"
+                    >
                       account details
                     </span>
                     .
@@ -237,6 +252,7 @@ export default function Login() {
                       fw="lighter"
                       uppercase
                       color="dark"
+                      loading={loadingAddress}
                       onClick={handleSaveAddress}
                     >
                       save address
@@ -303,32 +319,36 @@ export default function Login() {
     );
   }
 
-  return (
-    <div className="mt-[20%] relative  w-full">
-      <img
-        src={`/signin.jpg`}
-        className="h-[250px] mb-6 absolute left-[50%] translate-x-[-50%]"
-      />
-      <div className="absolute top-[270px] w-[90%] left-[50%] translate-x-[-50%]">
-        <h1 className="w-full text-center text-[1.3rem] font-semibold mb-6">
-          You are not signed in
-        </h1>
-        <Text className="w-full text-center">
-          Looks like you haven&apos;t signed in yet.
-        </Text>
-        <Button
-          color="dark"
-          size="sm"
-          fw="lighter"
-          radius={null}
-          uppercase
-          fullWidth
-          onClick={signIn}
-          mt={32}
-        >
-          sign in / create account
-        </Button>
+  if (typeof session !== "undefined" && !session) {
+    return (
+      <div className="mt-[20%] relative  w-full">
+        <img
+          src={`/signin.jpg`}
+          className="h-[250px] mb-6 absolute left-[50%] translate-x-[-50%]"
+        />
+        <div className="absolute top-[270px] w-[90%] left-[50%] translate-x-[-50%]">
+          <h1 className="w-full text-center text-[1.3rem] font-semibold mb-6">
+            You are not signed in
+          </h1>
+          <Text className="w-full text-center">
+            Looks like you haven&apos;t signed in yet.
+          </Text>
+          <Button
+            color="dark"
+            size="sm"
+            fw="lighter"
+            radius={null}
+            uppercase
+            fullWidth
+            onClick={signIn}
+            mt={32}
+          >
+            sign in / create account
+          </Button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  return <p>Loading</p>;
 }

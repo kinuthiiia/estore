@@ -219,225 +219,228 @@ export default function Product() {
   return (
     <div>
       <Logoheader />
+      <div className="mt-[80px] relative">
+        <Carousel
+          showThumbs={true}
+          showStatus={false}
+          autoPlay
+          infiniteLoop
+          showIndicators={false}
+        >
+          {product?.images.map((image, i) => (
+            <div key={i}>
+              <img src={image} className="w-full" />
+            </div>
+          ))}
+        </Carousel>
 
-      <Carousel
-        showThumbs={true}
-        showStatus={false}
-        autoPlay
-        infiniteLoop
-        showIndicators={false}
-      >
-        {product?.images.map((image, i) => (
-          <div key={i}>
-            <img src={image} className="w-full" />
+        <div className="p-4 space-y-8">
+          <div className="space-y-3">
+            <Text fz="lg" lineClamp={2} className="text-[#2c2c2c] font-medium">
+              {product?.name}
+            </Text>
+
+            <div className="flex space-x-2">
+              {product?.was && (
+                <p className="text-red-600 line-through text-[0.9rem]">
+                  Ksh. {product?.was}
+                </p>
+              )}
+              <p className="text-[#A18A68] text-[0.9rem]">{getPriceLabel()}</p>
+            </div>
           </div>
-        ))}
-      </Carousel>
 
-      <div className="p-4 space-y-8">
-        <div className="space-y-3">
-          <Text fz="lg" lineClamp={2} className="text-[#2c2c2c] font-medium">
-            {product?.name}
-          </Text>
-
-          <div className="flex space-x-2">
-            {product?.was && (
-              <p className="text-red-600 line-through text-[0.9rem]">
-                Ksh. {product?.was}
+          <Button
+            color="dark"
+            uppercase
+            fullWidth
+            disabled={
+              userData?.cart.some(
+                (cartItem) => cartItem?.product.id == router?.query?.id
+              ) && product.variants.length == 1
+            }
+            onClick={handleAddToCart}
+          >
+            <p className="font-medium">add to cart</p>
+          </Button>
+          {userData?.cart.some(
+            (cartItem) => cartItem?.product.id == router?.query?.id
+          ) &&
+            product.variants.length == 1 && (
+              <p className="text-orange-500 w-full text-center">
+                (Already in cart)
               </p>
             )}
-            <p className="text-[#A18A68] text-[0.9rem]">{getPriceLabel()}</p>
-          </div>
-        </div>
 
-        <Button
-          color="dark"
-          uppercase
-          fullWidth
-          disabled={
-            userData?.cart.some(
-              (cartItem) => cartItem?.product.id == router?.query?.id
-            ) && product.variants.length == 1
-          }
-          onClick={handleAddToCart}
-        >
-          <p className="font-medium">add to cart</p>
-        </Button>
-        {userData?.cart.some(
-          (cartItem) => cartItem?.product.id == router?.query?.id
-        ) &&
-          product.variants.length == 1 && (
-            <p className="text-orange-500 w-full text-center">
-              (Already in cart)
-            </p>
-          )}
-
-        <Drawer
-          opened={drawerOpen}
-          onClose={handleCloseDrawer}
-          title={
-            <h1 className="py-6 px-3 font-bold text-[1.5rem]">
-              Pick a variant
-            </h1>
-          }
-          position="bottom"
-          size="70%"
-          overlayProps={{ opacity: 0.5, blur: 4 }}
-        >
-          <Radio.Group
-            value={variant}
-            onChange={(val) => {
-              setVariant(val);
-            }}
-            name="variant"
-            withAsterisk
-            mt={30}
+          <Drawer
+            opened={drawerOpen}
+            onClose={handleCloseDrawer}
+            title={
+              <h1 className="py-6 px-3 font-bold text-[1.5rem]">
+                Pick a variant
+              </h1>
+            }
+            position="bottom"
+            size="70%"
+            overlayProps={{ opacity: 0.5, blur: 4 }}
           >
-            <div className="space-y-12">
-              {sortedVariants.map((variant, i) => (
-                <Radio
-                  key={i}
-                  value={variant?.label}
-                  disabled={userData?.cart.some(
-                    (cartItem) =>
-                      cartItem?.product.id == router?.query?.id &&
-                      cartItem?.variant == variant?.label
-                  )}
-                  label={
-                    <div className="flex space-x-4  mt-[-30px]">
-                      {variant?.thumbnail ? (
-                        <img
-                          className="rounded-md object-cover"
-                          src={variant?.thumbnail}
-                          height={70}
-                          width={70}
-                        />
-                      ) : (
-                        <div className=" border-gray-400 border-2 p-7 justify-center align-middle min-h-[70px] min-w-[70px]">
-                          <p>{variant?.label}</p>
-                        </div>
-                      )}
-                      <div className="h-full relative">
-                        <p className="text-[#A18A68] font-medium mt-5">
-                          Ksh.{variant?.price}{" "}
-                        </p>
-                        {userData?.cart.some(
-                          (cartItem) =>
-                            cartItem?.product.id == router?.query?.id &&
-                            cartItem?.variant == variant?.label
-                        ) && (
-                          <p className="text-red-500 mt-2">(Already in cart)</p>
+            <Radio.Group
+              value={variant}
+              onChange={(val) => {
+                setVariant(val);
+              }}
+              name="variant"
+              withAsterisk
+              mt={30}
+            >
+              <div className="space-y-12">
+                {sortedVariants.map((variant, i) => (
+                  <Radio
+                    key={i}
+                    value={variant?.label}
+                    disabled={userData?.cart.some(
+                      (cartItem) =>
+                        cartItem?.product.id == router?.query?.id &&
+                        cartItem?.variant == variant?.label
+                    )}
+                    label={
+                      <div className="flex space-x-4  mt-[-30px]">
+                        {variant?.thumbnail ? (
+                          <img
+                            className="rounded-md object-cover"
+                            src={variant?.thumbnail}
+                            height={70}
+                            width={70}
+                          />
+                        ) : (
+                          <div className=" border-gray-400 border-2 p-7 justify-center align-middle min-h-[70px] min-w-[70px]">
+                            <p>{variant?.label}</p>
+                          </div>
                         )}
+                        <div className="h-full relative">
+                          <p className="text-[#A18A68] font-medium mt-5">
+                            Ksh.{variant?.price}{" "}
+                          </p>
+                          {userData?.cart.some(
+                            (cartItem) =>
+                              cartItem?.product.id == router?.query?.id &&
+                              cartItem?.variant == variant?.label
+                          ) && (
+                            <p className="text-red-500 mt-2">
+                              (Already in cart)
+                            </p>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  }
-                />
+                    }
+                  />
+                ))}
+              </div>
+            </Radio.Group>
+            <Space h={30} />
+            <Button
+              fw="lighter"
+              uppercase
+              color="dark"
+              fullWidth
+              onClick={handleAddToCart}
+              loading={loading}
+            >
+              Add to cart
+            </Button>
+          </Drawer>
+
+          <div>
+            <Text lineClamp={lineClamp} color="#909090">
+              {product?.description}
+            </Text>
+
+            <span
+              className="text-[#A18A68] hover:cursor-pointer flex mt-2 mb-4"
+              onClick={() =>
+                lineClamp == 2 ? setLineClamp(10) : setLineClamp(2)
+              }
+            >
+              View {lineClamp == 2 ? "more" : "less"}{" "}
+              <IconChevronRight size={16} style={{ marginTop: 6 }} />
+            </span>
+            <Divider />
+          </div>
+
+          <div>
+            <Accordion defaultValue="more">
+              <Accordion.Item value="more">
+                <Accordion.Control>
+                  <p className="font-medium">Additional Information</p>
+                </Accordion.Control>
+                <Accordion.Panel>
+                  <div className="space-y-2 p-2">
+                    {product?.additionalInformation.map((info, i) => (
+                      <p key={i} className="font-medium">
+                        {info?.label}:{" "}
+                        <span className="font-light">{info?.value}</span>
+                      </p>
+                    ))}
+                  </div>
+                </Accordion.Panel>
+              </Accordion.Item>
+
+              <Accordion.Item value="reviews">
+                <Accordion.Control>
+                  <p className="font-medium">
+                    Reviews ({product?.reviews.length})
+                  </p>
+                </Accordion.Control>
+                <Accordion.Panel>
+                  <div className="space-y-8">
+                    {product?.reviews.length < 1 ? (
+                      <div className="bg-gray-100 p-4 border-t-2 border-[#A18A68]">
+                        <Text>No reviews yet.</Text>
+                      </div>
+                    ) : (
+                      product?.reviews.map((review, i) => (
+                        <Review key={i} review={review} />
+                      ))
+                    )}
+                  </div>
+                </Accordion.Panel>
+              </Accordion.Item>
+            </Accordion>
+          </div>
+
+          <div className="mt-12 space-y-8">
+            <p className="font-medium text-[1.3rem]">Similar Items</p>
+            <div className="w-full flex overflow-x-auto space-x-8">
+              {[
+                {
+                  id: 1,
+                  name: "Lira Earrings",
+                  price: 2000,
+                },
+                {
+                  id: 2,
+                  name: "Ollie Earrings",
+                  price: 2000,
+                },
+                {
+                  id: 3,
+                  name: "Hal Earrings",
+                  price: 2000,
+                },
+                {
+                  id: 4,
+                  name: "Kaede Earrings",
+                  price: 2000,
+                  was: 2500,
+                },
+              ].map((el, i) => (
+                <ProductCard product={el} key={i} />
               ))}
             </div>
-          </Radio.Group>
-          <Space h={30} />
-          <Button
-            fw="lighter"
-            uppercase
-            color="dark"
-            fullWidth
-            onClick={handleAddToCart}
-            loading={loading}
-          >
-            Add to cart
-          </Button>
-        </Drawer>
-
-        <div>
-          <Text lineClamp={lineClamp} color="#909090">
-            {product?.description}
-          </Text>
-
-          <span
-            className="text-[#A18A68] hover:cursor-pointer flex mt-2 mb-4"
-            onClick={() =>
-              lineClamp == 2 ? setLineClamp(10) : setLineClamp(2)
-            }
-          >
-            View {lineClamp == 2 ? "more" : "less"}{" "}
-            <IconChevronRight size={16} style={{ marginTop: 6 }} />
-          </span>
-          <Divider />
-        </div>
-
-        <div>
-          <Accordion defaultValue="more">
-            <Accordion.Item value="more">
-              <Accordion.Control>
-                <p className="font-medium">Additional Information</p>
-              </Accordion.Control>
-              <Accordion.Panel>
-                <div className="space-y-2 p-2">
-                  {product?.additionalInformation.map((info, i) => (
-                    <p key={i} className="font-medium">
-                      {info?.label}:{" "}
-                      <span className="font-light">{info?.value}</span>
-                    </p>
-                  ))}
-                </div>
-              </Accordion.Panel>
-            </Accordion.Item>
-
-            <Accordion.Item value="reviews">
-              <Accordion.Control>
-                <p className="font-medium">
-                  Reviews ({product?.reviews.length})
-                </p>
-              </Accordion.Control>
-              <Accordion.Panel>
-                <div className="space-y-8">
-                  {product?.reviews.length < 1 ? (
-                    <div className="bg-gray-100 p-4 border-t-2 border-[#A18A68]">
-                      <Text>No reviews yet.</Text>
-                    </div>
-                  ) : (
-                    product?.reviews.map((review, i) => (
-                      <Review key={i} review={review} />
-                    ))
-                  )}
-                </div>
-              </Accordion.Panel>
-            </Accordion.Item>
-          </Accordion>
-        </div>
-
-        <div className="mt-12 space-y-8">
-          <p className="font-medium text-[1.3rem]">Similar Items</p>
-          <div className="w-full flex overflow-x-auto space-x-8">
-            {[
-              {
-                id: 1,
-                name: "Lira Earrings",
-                price: 2000,
-              },
-              {
-                id: 2,
-                name: "Ollie Earrings",
-                price: 2000,
-              },
-              {
-                id: 3,
-                name: "Hal Earrings",
-                price: 2000,
-              },
-              {
-                id: 4,
-                name: "Kaede Earrings",
-                price: 2000,
-                was: 2500,
-              },
-            ].map((el, i) => (
-              <ProductCard product={el} key={i} />
-            ))}
           </div>
-        </div>
 
-        <Footer />
+          <Footer />
+        </div>
       </div>
     </div>
   );

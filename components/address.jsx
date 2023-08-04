@@ -10,10 +10,14 @@ import {
 import { notifications } from "@mantine/notifications";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import { useState } from "react";
 import { useMutation } from "urql";
 
 export default function Address({ address, noActions }) {
   const { data: session } = useSession();
+  const [loading, setLoading] = useState(false);
+  const [loadingToggle, setLoadingToggle] = useState(false);
+
   const MUTATE_ADDRESS = `
     mutation MUTATE_ADDRESS(
       $action: String
@@ -35,12 +39,7 @@ export default function Address({ address, noActions }) {
   const [_, _mutateAddress] = useMutation(MUTATE_ADDRESS);
 
   const handleToggleDefault = () => {
-    console.log({
-      action: "toggle-default",
-      id: address?.id,
-      email: session?.user?.email,
-      default: !address?.default,
-    });
+    setLoadingToggle(true);
 
     _mutateAddress({
       action: "toggle-default",
@@ -56,10 +55,14 @@ export default function Address({ address, noActions }) {
           color: "red",
           title: "Oops! Something occured",
         });
+      })
+      .finally(() => {
+        setLoadingToggle(false);
       });
   };
 
   const handleRemove = () => {
+    setLoading(true);
     _mutateAddress({
       action: "remove",
       id: address?.id,
@@ -73,6 +76,9 @@ export default function Address({ address, noActions }) {
           color: "red",
           title: "Oops! Something occured",
         });
+      })
+      .finally(() => {
+        setLoading(false);
       });
   };
 
@@ -104,6 +110,7 @@ export default function Address({ address, noActions }) {
             color="dark"
             variant="subtle"
             fullWidth
+            loading={loadingToggle}
             onClick={handleToggleDefault}
           >
             toggle default
@@ -122,6 +129,7 @@ export default function Address({ address, noActions }) {
               <div className="flex justify-between mt-8 space-x-12">
                 <Button
                   onClick={handleRemove}
+                  loading={loading}
                   color="dark"
                   fw="lighter"
                   uppercase
